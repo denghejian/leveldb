@@ -13,6 +13,7 @@
 
 namespace leveldb {
 
+// Arena是用来管理memtable的内存使用的
 class Arena {
  public:
   Arena();
@@ -39,16 +40,22 @@ class Arena {
   char* AllocateNewBlock(size_t block_bytes);
 
   // Allocation state
+  // 当前空闲内存block内的可用地址
   char* alloc_ptr_;
+  // 当前空闲内存block内的可用大小
   size_t alloc_bytes_remaining_;
 
   // Array of new[] allocated memory blocks
+  // 已经申请的block
   std::vector<char*> blocks_;
 
   // Total memory usage of the arena.
   //
   // TODO(costan): This member is accessed via atomics, but the others are
   //               accessed without any locking. Is this OK?
+  // 累计分配的内存大小
+  // 一个memtable对应一个Arena
+  // memtable内的数据量就用这个值表示
   std::atomic<size_t> memory_usage_;
 };
 
