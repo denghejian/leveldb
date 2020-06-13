@@ -199,7 +199,9 @@ class Version::LevelFileNumIterator : public Iterator {
   Status status() const override { return Status::OK(); }
 
  private:
+  // 对 key 做比较的 comparator
   const InternalKeyComparator icmp_;
+  // 当前 level 中的 FileMetaData 集合
   const std::vector<FileMetaData*>* const flist_;
   uint32_t index_;
 
@@ -467,12 +469,14 @@ bool Version::OverlapInLevel(int level, const Slice* smallest_user_key,
                                smallest_user_key, largest_user_key);
 }
 
+// 选择哪一层来接收memtable dump的结果
 int Version::PickLevelForMemTableOutput(const Slice& smallest_user_key,
                                         const Slice& largest_user_key) {
   int level = 0;
   if (!OverlapInLevel(0, &smallest_user_key, &largest_user_key)) {
     // Push to next level if there is no overlap in next level,
     // and the #bytes overlapping in the level after that are limited.
+    // NOTE 这里的InternalKey是什么用法？
     InternalKey start(smallest_user_key, kMaxSequenceNumber, kValueTypeForSeek);
     InternalKey limit(largest_user_key, 0, static_cast<ValueType>(0));
     std::vector<FileMetaData*> overlaps;
@@ -1457,6 +1461,7 @@ Compaction* VersionSet::CompactRange(int level, const InternalKey* begin,
       uint64_t s = inputs[i]->file_size;
       total += s;
       if (total >= limit) {
+        // 
         inputs.resize(i + 1);
         break;
       }

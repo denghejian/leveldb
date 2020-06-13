@@ -144,26 +144,35 @@ class Version {
   // REQUIRES: user portion of internal_key == user_key.
   void ForEachOverlapping(Slice user_key, Slice internal_key, void* arg,
                           bool (*func)(void*, int, FileMetaData*));
-
+  // 这个Version所属的VersionSet
   VersionSet* vset_;  // VersionSet to which this Version belongs
+  // 链表指针
   Version* next_;     // Next version in linked list
   Version* prev_;     // Previous version in linked list
+  // 引用计数
   int refs_;          // Number of live refs to this version
 
   // List of files per level
+  // 所有level中所有sstable文件的元信息
+  // 其中每层的sstable的元信息按照FileMetaData::smallest排序
+  // 这是在每次更新都保证的（参见VersionSet::Builder::Save()）
   std::vector<FileMetaData*> files_[config::kNumLevels];
 
   // Next file to compact based on seek stats.
+  // 需要compact的文件（allowed_seeks用光）
   FileMetaData* file_to_compact_;
+  // 需要compact的文件所在的层
   int file_to_compact_level_;
 
   // Level that should be compacted next and its compaction score.
   // Score < 1 means compaction is not strictly needed.  These fields
   // are initialized by Finalize().
+  // 当前最大的compact权重以及对应的level
   double compaction_score_;
   int compaction_level_;
 };
 
+// 类-VersionSet管理db当前的状态
 class VersionSet {
  public:
   VersionSet(const std::string& dbname, const Options* options,
@@ -293,25 +302,42 @@ class VersionSet {
 
   void AppendVersion(Version* v);
 
+  // NOTE 实际的Env 指什么？
   Env* const env_;
+  // NOTE db的数据路径 指什么？
   const std::string dbname_;
+  // 传入的option
   const Options* const options_;
+  // 操作sstable的TableCache 指什么？
   TableCache* const table_cache_;
+  // comparator
   const InternalKeyComparator icmp_;
+  // 下一个可用FileNumber
   uint64_t next_file_number_;
+  // manifest文件的FileNumber
   uint64_t manifest_file_number_;
+  // 最后用光的SequenceNumber
   uint64_t last_sequence_;
+  // log文件的FileNumber
   uint64_t log_number_;
+  // 辅助log文件的FileNumber，在memtable compact时，置为0
   uint64_t prev_log_number_;  // 0 or backing store for memtable being compacted
 
   // Opened lazily
+  // manifest文件的封装 指什么？
   WritableFile* descriptor_file_;
+  // manifest文件的writer
   log::Writer* descriptor_log_;
+  // 正在服务的Version链表的头
   Version dummy_versions_;  // Head of circular doubly-linked list of versions.
+  // 当前最新的Version
   Version* current_;        // == dummy_versions_.prev_
 
   // Per-level key at which the next compaction at that level should start.
   // Either an empty string, or a valid InternalKey.
+  // 为了尽量均匀compact每个level，所以会将这一次compact的end-key作为下一次compact的start-key
+  // compact_pointer_保存的就是每个level下一次compact的start-key
+  // 除了current_外的Version并不会做compact，所以这个值并会不保存在Version中
   std::string compact_pointer_[config::kNumLevels];
 };
 
@@ -362,20 +388,30 @@ class Compaction {
   friend class VersionSet;
 
   Compaction(const Options* options, int level);
-
+  // 要做compact的level
   int level_;
+  // 生成sstable文件的最大size
   uint64_t max_output_file_size_;
+  // compact时当前的Version
   Version* input_version_;
+  // 记录compact过程中的操作
   VersionEdit edit_;
 
   // Each compaction reads inputs from "level_" and "level_+1"
+  // inputs_[0]中是level-n的sstable文件元信息
+  // inputs_[1]中是level-n+1的sstable文件元信息
   std::vector<FileMetaData*> inputs_[2];  // The two sets of inputs
 
   // State used to check for number of overlapping grandparent files
   // (parent == level_ + 1, grandparent == level_ + 2)
+  // NOTE 详细参考笔记关于 grandparents_ 字段的解释
   std::vector<FileMetaData*> grandparents_;
+  // TODO 记录compact时，grandparents_中已经overlap的index
   size_t grandparent_index_;  // Index in grandparent_starts_
+  // 记录是否已经有key检查overlap
+  // 记录是否有key检查overlap
   bool seen_key_;             // Some output key has been seen
+  // 记录已经overlap的累计size
   int64_t overlapped_bytes_;  // Bytes of overlap between current output
                               // and grandparent files
 

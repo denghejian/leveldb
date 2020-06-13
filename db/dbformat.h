@@ -42,6 +42,7 @@ static const int kL0_StopWritesTrigger = 12;
 static const int kMaxMemCompactLevel = 2;
 
 // Approximate gap in bytes between samples of data read during iteration.
+// NOTE 上面的字段大概都懂，这个字段不是很了解
 static const int kReadBytesPeriod = 1048576;
 
 }  // namespace config
@@ -89,6 +90,7 @@ void AppendInternalKey(std::string* result, const ParsedInternalKey& key);
 // stores the parsed data in "*result", and returns true.
 //
 // On error, returns false, leaves "*result" in an undefined state.
+// NOTE 不懂为啥要搞一个InternalKey解析成ParsedInternalKey的过程
 bool ParseInternalKey(const Slice& internal_key, ParsedInternalKey* result);
 
 // Returns the user key portion of an internal key.

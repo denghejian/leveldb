@@ -85,19 +85,28 @@ class VersionEdit {
 
   typedef std::set<std::pair<int, uint64_t>> DeletedFileSet;
 
+  // db一旦创建，排序的逻辑就必须保持兼容，所以可以用comparator的名字作为凭证
   std::string comparator_;
+  // log的FileNumber
   uint64_t log_number_;
+  // 辅助log文件FileNumber
   uint64_t prev_log_number_;
+  // 下一个可用的FileNumber
   uint64_t next_file_number_;
+  // 用过的最后一个SequnceNumber
   SequenceNumber last_sequence_;
+  // 上面这些字段是否可用的标识
   bool has_comparator_;
   bool has_log_number_;
   bool has_prev_log_number_;
   bool has_next_file_number_;
   bool has_last_sequence_;
 
+  // 要更新的level->compact_pointer
   std::vector<std::pair<int, InternalKey>> compact_pointers_;
+  // 要删除的sstable文件的集合，即compaction中作为输入的sstable文件
   DeletedFileSet deleted_files_;
+  // 新生成的sstable文件的集合，即compaction中输出的sstable文件
   std::vector<std::pair<int, FileMetaData>> new_files_;
 };
 
